@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Get AYANET source code
+      - name: Checkout AYANET source
         uses: actions/checkout@v4
 
       - name: Install Java
@@ -21,15 +21,22 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Install Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android components
+      - name: Prepare Android SDK
         run: |
-          sdkmanager "platforms;android-35"
-          sdkmanager "build-tools;35.0.0"
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
 
-      - name: Install Gradle
+      - name: Accept Android licenses
+        run: |
+          set +o pipefail
+          yes | sdkmanager --licenses
+          set -o pipefail
+
+      - name: Install Android SDK packages
+        run: |
+          sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
@@ -37,7 +44,7 @@ jobs:
       - name: Build AYANET APK
         run: gradle assembleDebug
 
-      - name: Save AYANET APK
+      - name: Upload AYANET APK
         uses: actions/upload-artifact@v4
         with:
           name: AYANET-OS-APK
